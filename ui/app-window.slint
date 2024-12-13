@@ -3,19 +3,19 @@ import { Button } from "std-widgets.slint";
 export component AppWindow inherits Window {
     in property <string> timer: "25:00";
     in property <int> remaining-time: 25 * 60;
-    property <int> completed-cycles;
-    in property <int> cycle: mod(completed-cycles, 8);
+    property <int> completed-sessions;
+    in property <int> session: mod(completed-sessions, 8);
     out property <bool> paused: true;
     property <int> counter;
-    out property <int> elapsed-time: mod(cycle, 2) == 0 ? 25 * 60 - remaining-time : 5 * 60 - remaining-time;
+    out property <int> elapsed-time: mod(session, 2) == 0 ? 25 * 60 - remaining-time : 5 * 60 - remaining-time;
     in property <string> status: "Focus";
     default-font-family: "Edu NSW ACT Foundation";
     max-width: 0px;
     max-height: 0px;
     forward-focus: play-pause;
     callback upgrade();
-    public function complete-cycle() {
-        completed-cycles += 1;
+    public function complete-session() {
+        completed-sessions += 1;
         counter += 1;
     }
 
@@ -34,7 +34,7 @@ export component AppWindow inherits Window {
             HorizontalLayout {
                 alignment: center;
                 Text {
-                    text: "\{ceil((cycle + 1) / 2)}/4";
+                    text: "\{ceil((session + 1) / 2)}/4";
                 }
             }
         }
@@ -69,7 +69,7 @@ export component AppWindow inherits Window {
                     clicked => {
                         if status == "Short Break" {
                             root.upgrade();
-                            counter = 0;
+                            counter = -1;
                         } else {
                             debug("Upgrade is only available during short breaks");
                         }

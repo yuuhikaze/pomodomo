@@ -1,7 +1,9 @@
 use interface::InterfaceBuilder;
 
-mod interface;
+mod alert;
 mod controller;
+mod interface;
+mod pomodoro;
 
 #[tokio::main]
 async fn main() {

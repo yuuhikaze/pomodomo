@@ -1,10 +1,13 @@
 [package]
 name = "pomodomo"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
 futures = "0.3.31"
+notify-rust = "4.11.3"
+rodio = "0.20.1"
+rust-embed = "8.5.0"
 slint = "1.8.0"
 tokio = { version = "1.42.0", features = ["macros", "rt-multi-thread", "sync", "time"] }
 

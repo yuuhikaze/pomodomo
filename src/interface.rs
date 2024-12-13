@@ -1,5 +1,10 @@
 slint::include_modules!();
 
+use crate::{
+    alert::Alert,
+    controller,
+    pomodoro::PomodoroStatus,
+};
 use slint::{SharedString, Timer, TimerMode};
 
 pub struct InterfaceBuilder {
@@ -23,47 +28,56 @@ impl InterfaceBuilder {
         let app_weak = self.app.as_weak();
         let app = app_weak.unwrap();
         self.app.on_upgrade(move || {
-            app.set_remaining_time(15 * 60 - app.get_elapsed_time());
-            app.set_status(SharedString::from("Long Break"));
+            Self::set_time(&app, 15 * 60 - app.get_elapsed_time());
+            Self::set_status(&app, PomodoroStatus::LongBreak);
         });
     }
 
     async fn run_timer(&self) -> Timer {
         let app_weak = self.app.as_weak();
         let app = app_weak.unwrap();
-        let set_time = move |seconds| {
-            app.set_timer(SharedString::from(format!(
-                "{:2}:{:02}",
-                seconds / 60,
-                seconds % 60
-            )));
-            app.set_remaining_time(seconds);
-        };
-        let app = app_weak.unwrap();
         let timer = Timer::default();
         timer.start(
             TimerMode::Repeated,
             std::time::Duration::from_secs(1),
             move || {
-                let cycle = app.get_cycle();
+                let session = app.get_session();
                 let remaining_time = app.get_remaining_time();
                 let paused = app.get_paused();
                 if !paused {
                     if remaining_time == 0 {
-                        app.invoke_complete_cycle();
-                        if cycle % 2 == 0 {
-                            set_time(5 * 60);
-                            app.set_status(SharedString::from("Short Break"));
+                        app.invoke_complete_session();
+                        if session % 2 == 0 {
+                            Self::set_time(&app, 5 * 60);
+                            Self::set_status(&app, PomodoroStatus::ShortBreak);
                         } else {
-                            set_time(25 * 60);
-                            app.set_status(SharedString::from("Focus"));
+                            Self::set_time(&app, 25 * 60);
+                            Self::set_status(&app, PomodoroStatus::Focus);
                         }
                     } else {
-                        set_time(remaining_time - 1);
+                        Self::set_time(&app, remaining_time - 1);
                     }
                 }
             },
         );
         timer
+    }
+
+    fn set_time(app: &AppWindow, seconds: i32) {
+        app.set_timer(SharedString::from(format!(
+            "{:2}:{:02}",
+            seconds / 60,
+            seconds % 60
+        )));
+        app.set_remaining_time(seconds);
+    }
+
+    fn set_status(app: &AppWindow, status: PomodoroStatus) {
+        app.set_status(SharedString::from(status.to_string()));
+        let alert = Alert::new(status);
+        alert.notify();
+        controller::get_runtime_handle().spawn(async move {
+            alert.play_sound().await;
+        });
     }
 }
