@@ -1,10 +1,6 @@
 slint::include_modules!();
 
-use crate::{
-    alert::Alert,
-    controller,
-    pomodoro::PomodoroStatus,
-};
+use crate::{alert::{self, Alert}, controller, pomodoro::PomodoroStatus};
 use slint::{SharedString, Timer, TimerMode};
 
 pub struct InterfaceBuilder {
@@ -56,6 +52,11 @@ impl InterfaceBuilder {
                         }
                     } else {
                         Self::set_time(&app, remaining_time - 1);
+                        if remaining_time - 1 <= 15 && remaining_time - 1 > 0 {
+                            controller::get_runtime_handle().spawn(async move {
+                                alert::play_sound("audio/tick.mp3").await;
+                            });
+                        }
                     }
                 }
             },
