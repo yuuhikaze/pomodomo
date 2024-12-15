@@ -3310,7 +3310,7 @@ dependencies = [
 
 [[package]]
 name = "pomodomo"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "futures",
  "notify-rust",

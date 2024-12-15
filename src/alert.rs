@@ -10,16 +10,16 @@ use crate::pomodoro::PomodoroStatus;
 struct Asset;
 
 pub struct Alert {
-    pomodoro_status: PomodoroStatus,
+    pt_status: PomodoroStatus,
 }
 
 impl Alert {
-    pub fn new(pomodoro_status: PomodoroStatus) -> Self {
-        Self { pomodoro_status }
+    pub fn new(pt_status: PomodoroStatus) -> Self {
+        Self { pt_status }
     }
 
     pub async fn play_sound(&self) {
-        let path = match self.pomodoro_status {
+        let path = match self.pt_status {
             PomodoroStatus::Focus => "audio/focus.mp3",
             PomodoroStatus::ShortBreak => "audio/short-break.mp3",
             PomodoroStatus::LongBreak => "audio/long-break.mp3",
@@ -28,7 +28,7 @@ impl Alert {
     }
 
     pub fn notify(&self) {
-        let (summary, body) = match self.pomodoro_status {
+        let (summary, body) = match self.pt_status {
             PomodoroStatus::Focus => ("Break Finished", "Begin focusing for 25 minutes"),
             PomodoroStatus::ShortBreak => ("Focus Round Complete", "Begin a 5 minute short break"),
             PomodoroStatus::LongBreak => {

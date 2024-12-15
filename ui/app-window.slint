@@ -1,92 +1,192 @@
-import { Button } from "std-widgets.slint";
+import { Button, AboutSlint } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
-    in property <string> timer: "25:00";
-    in property <int> remaining-time: 25 * 60;
-    property <int> completed-sessions;
-    in property <int> session: mod(completed-sessions, 8);
-    out property <bool> paused: true;
-    property <int> counter;
-    out property <int> elapsed-time: mod(session, 2) == 0 ? 25 * 60 - remaining-time : 5 * 60 - remaining-time;
-    in property <string> status: "Focus";
+    property <int> view: 1;
+    in-out property <int> ct-remaining-time: 5 * 60;
+    in-out property <bool> ct-paused: true;
+    in-out property <string> ct-minutes-banner: "5";
+    in-out property <string> ct-seconds-banner: "00";
+    in property <string> pt-banner: "25:00";
+    in property <int> pt-remaining-time: 25 * 60;
+    property <int> pt-completed-sessions;
+    in property <int> pt-current-session: mod(pt-completed-sessions, 8);
+    out property <bool> pt-paused: true;
+    property <int> pt-upgrade-enabler;
+    out property <int> pt-elapsed-time: mod(pt-current-session, 2) == 0 ? 25 * 60 - pt-remaining-time : 5 * 60 - pt-remaining-time;
+    in property <string> pt-status: "Focus";
     default-font-family: "Edu NSW ACT Foundation";
     max-width: 0px;
     max-height: 0px;
-    forward-focus: play-pause;
+    forward-focus: pt-play-pause;
     callback upgrade();
-    public function complete-session() {
-        completed-sessions += 1;
-        counter += 1;
+    public function complete-pt-session() {
+        pt-completed-sessions += 1;
+        if pt-upgrade-enabler <= 3 && pt-status == "Focus" {
+            pt-upgrade-enabler += 1;
+        }
+    }
+    function update-focus() {
+        if root.view == 0 {
+            focus-scope.focus();
+        } else if root.view == 1 {
+            pt-play-pause.focus();
+        } else {
+            ct-play-pause.focus();
+        }
     }
 
-    HorizontalLayout {
-        padding: 10px;
-        VerticalLayout {
+    focus-scope := FocusScope {
+        key-pressed(event) => {
+            if (event.modifiers.control && event.text == "j") {
+                if root.view < 3 {
+                    root.view += 1;
+                    update-focus();
+                }
+                accept
+            } else if (event.modifiers.control && event.text == "k") {
+                if root.view > 0 {
+                    root.view -= 1;
+                    update-focus();
+                }
+                accept
+            } else {
+                reject
+            }
+        }
+
+        pt-settings-panel := VerticalLayout {
             alignment: center;
-            width: 100px;
+            visible: root.view == 0;
             HorizontalLayout {
                 alignment: center;
                 Text {
-                    text: status;
+                    font-size: 24px;
+                    text: "Settings panel";
                 }
             }
 
             HorizontalLayout {
                 alignment: center;
                 Text {
-                    text: "\{ceil((session + 1) / 2)}/4";
+                    font-size: 24px;
+                    text: "[TODO]";
                 }
             }
         }
 
-        VerticalLayout {
-            horizontal-stretch: 1;
-            alignment: center;
-            HorizontalLayout {
+        pt-panel := HorizontalLayout {
+            visible: root.view == 1;
+            padding: 10px;
+            VerticalLayout {
                 alignment: center;
-                Text {
-                    font-size: 32px;
-                    text: timer;
-                }
-            }
-
-            Rectangle {
-                height: 5px;
-            }
-
-            HorizontalLayout {
-                alignment: center;
-                play-pause := Button {
-                    text: root.paused ? "" : "";
-                    clicked => {
-                        root.paused = !root.paused;
+                width: 100px;
+                HorizontalLayout {
+                    alignment: center;
+                    Text {
+                        text: pt-status;
                     }
                 }
 
-                upgrade := Button {
-                    enabled: root.counter >= 7 ? true : false;
-                    text: "󰁡";
-                    clicked => {
-                        if status == "Short Break" {
-                            root.upgrade();
-                            counter = -1;
-                        } else {
-                            debug("Upgrade is only available during short breaks");
+                HorizontalLayout {
+                    alignment: center;
+                    Text {
+                        text: "\{pt-upgrade-enabler}/4";
+                    }
+                }
+            }
+
+            VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                HorizontalLayout {
+                    alignment: center;
+                    Text {
+                        font-size: 32px;
+                        text: pt-banner;
+                    }
+                }
+
+                Rectangle {
+                    height: 5px;
+                }
+
+                HorizontalLayout {
+                    alignment: center;
+                    pt-play-pause := Button {
+                        text: root.pt-paused ? "" : "";
+                        clicked => {
+                            root.pt-paused = !root.pt-paused;
+                        }
+                    }
+
+                    upgrade := Button {
+                        enabled: root.pt-upgrade-enabler >= 3 ? true : false;
+                        text: "󰁡";
+                        clicked => {
+                            if pt-status == "Short Break" {
+                                root.upgrade();
+                                pt-upgrade-enabler = 0;
+                            } else {
+                                debug("Upgrade is only available during short breaks");
+                            }
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    alignment: center;
+                    done := Button {
+                        text: "󰄴";
+                    }
+
+                    stats := Button {
+                        text: "󰄨";
+                    }
+                }
+            }
+        }
+
+        ct-panel := HorizontalLayout {
+            visible: root.view == 2;
+            VerticalLayout {
+                alignment: center;
+                Text {
+                    ct-banner := HorizontalLayout {
+                        alignment: center;
+                        minutes := TextInput {
+                            font-size: 32px;
+                            text <=> ct-minutes-banner;
+                        }
+
+                        colon := Text {
+                            font-size: 32px;
+                            text: ":";
+                        }
+
+                        seconds := TextInput {
+                            font-size: 32px;
+                            text <=> ct-seconds-banner;
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    alignment: center;
+                    ct-play-pause := Button {
+                        enabled: ct-minutes-banner.to-float() != 0 || ct-seconds-banner.to-float() != 0;
+                        text: root.ct-paused ? "" : "";
+                        clicked => {
+                            root.ct-remaining-time = minutes.text.to-float() * 60 + seconds.text.to-float();
+                            root.ct-paused = !root.ct-paused;
                         }
                     }
                 }
             }
+        }
 
-            HorizontalLayout {
-                alignment: center;
-                done := Button {
-                    text: "󰄴";
-                }
-
-                stats := Button {
-                    text: "󰄨";
-                }
-            }
+        slint-panel := VerticalLayout {
+            visible: root.view == 3;
+            AboutSlint { }
         }
     }
 }
